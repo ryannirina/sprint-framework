@@ -15,10 +15,12 @@ A Java web framework inspired by Spring MVC.
 - List all controllers via /controllers endpoint
 - Web.xml configuration for base package
 
-### Sprint 2: Controller Support
-- Controller annotation support
-- Method parameter resolution
-- Request mapping infrastructure
+### Sprint 2: URL Mapping
+- GetMapping annotation for HTTP GET requests
+- URL to controller method mapping
+- Relative URL handling
+- Duplicate URL detection
+- 404 handling for unmapped URLs
 
 ### Sprint 3: View Resolution
 - View resolver interface
