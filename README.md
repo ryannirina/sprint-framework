@@ -9,10 +9,11 @@ A Java web framework inspired by Spring MVC.
 - processRequest method
 - Jar creation script
 
-### Sprint 1: Handler Mapping
-- Handler mapping interface
-- Default implementation of handler mapping
-- Handler method resolution
+### Sprint 1: Controller Discovery
+- Controller annotation
+- Package scanning for controllers
+- List all controllers via /controllers endpoint
+- Web.xml configuration for base package
 
 ### Sprint 2: Controller Support
 - Controller annotation support
