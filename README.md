@@ -24,7 +24,7 @@ A Java web framework inspired by Spring MVC.
 
 ### Sprint 3: View Resolution
 - View resolver interface
-- View template support
+- JSP view resolver implementation
 - Model and view integration
 
 ### Sprint 4: ModelView
@@ -32,3 +32,11 @@ A Java web framework inspired by Spring MVC.
 - Support for binding model attributes to request
 - Request forwarding to views in /WEB-INF/views/
 - Enhanced controller return handling
+
+### Sprint 5: Error Handling
+- Non-existent controller package detection
+- Empty controller package validation
+- Duplicate URL mapping prevention
+- Detailed 404 error for unmapped URLs
+- Return type validation and error reporting
+- Proper HTTP status codes for different errors
