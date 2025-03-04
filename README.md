@@ -25,6 +25,7 @@ A Java web framework inspired by Spring MVC.
 ### Sprint 3: View Resolution
 - View resolver interface
 - JSP view resolver implementation
+- View template support
 - Model and view integration
 
 ### Sprint 4: ModelView
