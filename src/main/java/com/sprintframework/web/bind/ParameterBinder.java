@@ -1,11 +1,14 @@
 package com.sprintframework.web.bind;
 
 import com.sprintframework.web.annotation.RequestParam;
+import com.sprintframework.web.annotation.RequestObject;
+import com.sprintframework.web.annotation.RequestField;
 import com.sprintframework.web.exception.SprintFrameworkException;
 import com.sprintframework.web.exception.SprintFrameworkException.ErrorType;
 
 import javax.servlet.http.HttpServletRequest;
 import java.lang.reflect.Parameter;
+import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -16,22 +19,80 @@ public class ParameterBinder {
         
         for (int i = 0; i < parameters.length; i++) {
             Parameter param = parameters[i];
-            String paramName = getParameterName(param);
-            String paramValue = request.getParameter(paramName);
             
-            // Check if parameter is required
-            RequestParam annotation = param.getAnnotation(RequestParam.class);
-            if (annotation != null && annotation.required() && paramValue == null) {
+            // Check if parameter has any binding annotation
+            if (!hasBindingAnnotation(param)) {
                 throw new SprintFrameworkException(
                     ErrorType.PARAMETER_BINDING,
-                    "Required parameter '" + paramName + "' is missing"
+                    "Parameter '" + param.getName() + "' must be annotated with @RequestParam or @RequestObject"
                 );
             }
             
-            args[i] = convertParameterValue(paramValue, param.getType());
+            if (param.isAnnotationPresent(RequestParam.class)) {
+                args[i] = bindSimpleParameter(param, request);
+            } else if (param.isAnnotationPresent(RequestObject.class)) {
+                args[i] = bindObjectParameter(param, request);
+            }
         }
         
         return args;
+    }
+    
+    private static boolean hasBindingAnnotation(Parameter param) {
+        return param.isAnnotationPresent(RequestParam.class) || 
+               param.isAnnotationPresent(RequestObject.class);
+    }
+    
+    private static Object bindSimpleParameter(Parameter param, HttpServletRequest request) {
+        String paramName = getParameterName(param);
+        String paramValue = request.getParameter(paramName);
+        
+        RequestParam annotation = param.getAnnotation(RequestParam.class);
+        if (annotation != null && annotation.required() && paramValue == null) {
+            throw new SprintFrameworkException(
+                ErrorType.PARAMETER_BINDING,
+                "Required parameter '" + paramName + "' is missing"
+            );
+        }
+        
+        return convertParameterValue(paramValue, param.getType());
+    }
+    
+    private static Object bindObjectParameter(Parameter param, HttpServletRequest request) {
+        Class<?> type = param.getType();
+        RequestObject annotation = param.getAnnotation(RequestObject.class);
+        String prefix = annotation.prefix().isEmpty() ? "" : annotation.prefix() + ".";
+        
+        try {
+            Object instance = type.getDeclaredConstructor().newInstance();
+            
+            for (Field field : type.getDeclaredFields()) {
+                if (field.isAnnotationPresent(RequestField.class)) {
+                    field.setAccessible(true);
+                    RequestField fieldAnnotation = field.getAnnotation(RequestField.class);
+                    String fieldName = fieldAnnotation.value().isEmpty() ? field.getName() : fieldAnnotation.value();
+                    String paramName = prefix + fieldName;
+                    String paramValue = request.getParameter(paramName);
+                    
+                    if (fieldAnnotation.required() && paramValue == null) {
+                        throw new SprintFrameworkException(
+                            ErrorType.PARAMETER_BINDING,
+                            "Required field '" + paramName + "' is missing"
+                        );
+                    }
+                    
+                    Object convertedValue = convertParameterValue(paramValue, field.getType());
+                    field.set(instance, convertedValue);
+                }
+            }
+            
+            return instance;
+        } catch (ReflectiveOperationException e) {
+            throw new SprintFrameworkException(
+                ErrorType.PARAMETER_BINDING,
+                "Failed to bind object parameter: " + e.getMessage()
+            );
+        }
     }
     
     private static String getParameterName(Parameter param) {

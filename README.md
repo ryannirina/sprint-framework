@@ -48,3 +48,10 @@ A Java web framework inspired by Spring MVC.
 - Support for required/optional parameters
 - Type conversion for common Java types
 - Detailed parameter binding error messages
+
+### Sprint 7: Object Parameter Binding
+- Added @RequestObject annotation for binding request parameters to objects
+- Added @RequestField annotation for marking bindable object fields
+- Support for nested parameter names with prefix
+- Required field validation
+- Mandatory parameter annotation requirement
