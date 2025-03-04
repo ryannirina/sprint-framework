@@ -2,6 +2,7 @@ package com.sprintframework.web.servlet;
 
 import com.sprintframework.web.handler.HandlerMapping;
 import com.sprintframework.web.handler.HandlerMethod;
+import com.sprintframework.web.modelview.ModelView;
 import com.sprintframework.web.util.PackageScanner;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -9,6 +10,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 public class FrontController extends HttpServlet {
     private HandlerMapping handlerMapping;
@@ -47,8 +49,13 @@ public class FrontController extends HttpServlet {
                 Object controller = handler.getControllerClass().getDeclaredConstructor().newInstance();
                 Object result = handler.getMethod().invoke(controller);
                 
-                response.setContentType("text/plain");
-                response.getWriter().write(String.valueOf(result));
+                if (result instanceof ModelView) {
+                    handleModelView((ModelView) result, request, response);
+                } else {
+                    // Handle non-ModelView returns as before
+                    response.setContentType("text/plain");
+                    response.getWriter().write(String.valueOf(result));
+                }
             } catch (Exception e) {
                 throw new ServletException("Error processing request", e);
             }
@@ -56,5 +63,17 @@ public class FrontController extends HttpServlet {
             response.setStatus(HttpServletResponse.SC_NOT_FOUND);
             response.getWriter().write("No handler found for URL: " + relativeUrl);
         }
+    }
+
+    private void handleModelView(ModelView modelView, HttpServletRequest request, HttpServletResponse response) 
+            throws ServletException, IOException {
+        // Bind all attributes from the model to the request
+        for (Map.Entry<String, Object> entry : modelView.getData().entrySet()) {
+            request.setAttribute(entry.getKey(), entry.getValue());
+        }
+        
+        // Forward the request to the view
+        String viewPath = "/WEB-INF/views/" + modelView.getUrl();
+        request.getRequestDispatcher(viewPath).forward(request, response);
     }
 }

@@ -26,3 +26,9 @@ A Java web framework inspired by Spring MVC.
 - View resolver interface
 - View template support
 - Model and view integration
+
+### Sprint 4: ModelView
+- ModelView class with URL and data map
+- Support for binding model attributes to request
+- Request forwarding to views in /WEB-INF/views/
+- Enhanced controller return handling
