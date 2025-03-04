@@ -55,3 +55,10 @@ A Java web framework inspired by Spring MVC.
 - Support for nested parameter names with prefix
 - Required field validation
 - Mandatory parameter annotation requirement
+
+### Sprint 8: Custom Session Management
+- Added Session class for simplified session management
+- Added @SessionInject for automatic session injection
+- Type-safe session attribute access with Optional return
+- Session lifecycle management (create, invalidate)
+- Session configuration (timeout, new session check)

@@ -7,6 +7,8 @@ import com.sprintframework.web.util.PackageScanner;
 import com.sprintframework.web.exception.SprintFrameworkException;
 import com.sprintframework.web.exception.SprintFrameworkException.ErrorType;
 import com.sprintframework.web.bind.ParameterBinder;
+import com.sprintframework.web.annotation.SessionInject;
+import com.sprintframework.web.session.Session;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -14,6 +16,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.lang.reflect.Parameter;
+import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
 
@@ -62,6 +65,9 @@ public class FrontController extends HttpServlet {
             HandlerMethod handler = handlerMapping.getHandler(relativeUrl);
             Object controller = handler.getControllerClass().getDeclaredConstructor().newInstance();
             
+            // Inject session if needed
+            injectSession(controller, request);
+            
             // Bind parameters and invoke the method
             Object[] args = ParameterBinder.bindParameters(handler.getParameters(), request);
             Object result = handler.getMethod().invoke(controller, args);
@@ -92,6 +98,28 @@ public class FrontController extends HttpServlet {
                 ErrorType.UNSUPPORTED_RETURN_TYPE,
                 "Error processing request: " + e.getMessage(),
                 e
+            );
+        }
+    }
+
+    private void injectSession(Object controller, HttpServletRequest request) {
+        try {
+            for (Field field : controller.getClass().getDeclaredFields()) {
+                if (field.isAnnotationPresent(SessionInject.class)) {
+                    if (field.getType() != Session.class) {
+                        throw new SprintFrameworkException(
+                            ErrorType.PARAMETER_BINDING,
+                            "@SessionInject can only be used with Session type"
+                        );
+                    }
+                    field.setAccessible(true);
+                    field.set(controller, new Session(request));
+                }
+            }
+        } catch (IllegalAccessException e) {
+            throw new SprintFrameworkException(
+                ErrorType.PARAMETER_BINDING,
+                "Failed to inject session: " + e.getMessage()
             );
         }
     }
