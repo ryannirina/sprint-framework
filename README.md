@@ -40,3 +40,10 @@ A Java web framework inspired by Spring MVC.
 - Detailed 404 error for unmapped URLs
 - Return type validation and error reporting
 - Proper HTTP status codes for different errors
+
+### Sprint 6: Request Parameter Binding
+- Automatic parameter name-based binding
+- @RequestParam annotation for custom binding
+- Support for required/optional parameters
+- Type conversion for common Java types
+- Detailed parameter binding error messages

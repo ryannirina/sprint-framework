@@ -22,7 +22,8 @@ public class SprintFrameworkException extends RuntimeException {
         EMPTY_PACKAGE("No controllers found in package"),
         DUPLICATE_URL("Duplicate URL mapping found"),
         URL_NOT_FOUND("URL not found"),
-        UNSUPPORTED_RETURN_TYPE("Unsupported controller method return type");
+        UNSUPPORTED_RETURN_TYPE("Unsupported controller method return type"),
+        PARAMETER_BINDING("Parameter binding error");
 
         private final String description;
 

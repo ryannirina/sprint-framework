@@ -6,12 +6,14 @@ import com.sprintframework.web.modelview.ModelView;
 import com.sprintframework.web.util.PackageScanner;
 import com.sprintframework.web.exception.SprintFrameworkException;
 import com.sprintframework.web.exception.SprintFrameworkException.ErrorType;
+import com.sprintframework.web.bind.ParameterBinder;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.lang.reflect.Parameter;
 import java.util.List;
 import java.util.Map;
 
@@ -58,15 +60,11 @@ public class FrontController extends HttpServlet {
         
         try {
             HandlerMethod handler = handlerMapping.getHandler(relativeUrl);
-            if (handler == null) {
-                throw new SprintFrameworkException(
-                    ErrorType.URL_NOT_FOUND,
-                    "No handler found for URL: " + relativeUrl
-                );
-            }
-            
             Object controller = handler.getControllerClass().getDeclaredConstructor().newInstance();
-            Object result = handler.getMethod().invoke(controller);
+            
+            // Bind parameters and invoke the method
+            Object[] args = ParameterBinder.bindParameters(handler.getParameters(), request);
+            Object result = handler.getMethod().invoke(controller, args);
             
             if (result == null) {
                 throw new SprintFrameworkException(
@@ -124,7 +122,8 @@ public class FrontController extends HttpServlet {
                 response.setStatus(HttpServletResponse.SC_CONFLICT);
                 break;
             case UNSUPPORTED_RETURN_TYPE:
-                response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            case PARAMETER_BINDING:
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
                 break;
             default:
                 response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
