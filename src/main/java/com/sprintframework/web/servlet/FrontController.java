@@ -9,12 +9,14 @@ import com.sprintframework.web.exception.SprintFrameworkException.ErrorType;
 import com.sprintframework.web.bind.ParameterBinder;
 import com.sprintframework.web.annotation.SessionInject;
 import com.sprintframework.web.session.Session;
+import com.sprintframework.web.registry.ControllerRegistry;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.Field;
 import java.util.List;
@@ -23,7 +25,8 @@ import java.util.Map;
 public class FrontController extends HttpServlet {
     private HandlerMapping handlerMapping;
     private String basePackage;
-    
+    private static final String CONTROLLERS_URL = "/controllers";
+
     @Override
     public void init() throws ServletException {
         try {
@@ -36,9 +39,6 @@ public class FrontController extends HttpServlet {
             }
             
             handlerMapping = new HandlerMapping();
-            
-            // Register system controller first
-            handlerMapping.registerController(SystemController.class);
             
             // Register application controllers
             List<Class<?>> controllers = PackageScanner.findControllers(basePackage);
@@ -66,16 +66,15 @@ public class FrontController extends HttpServlet {
         String contextPath = request.getContextPath();
         String relativeUrl = uri.substring(contextPath.length());
         
+        // Special handling for /controllers endpoint
+        if (CONTROLLERS_URL.equals(relativeUrl)) {
+            handleControllersList(response);
+            return;
+        }
+        
         try {
             HandlerMethod handler = handlerMapping.getHandler(relativeUrl);
-            Object controller;
-            
-            // Special handling for SystemController
-            if (handler.getControllerClass() == SystemController.class) {
-                controller = new SystemController(handlerMapping, basePackage);
-            } else {
-                controller = handler.getControllerClass().getDeclaredConstructor().newInstance();
-            }
+            Object controller = ControllerRegistry.getInstance().getController(handler.getControllerClass());
             
             // Inject session if needed
             injectSession(controller, request);
@@ -144,6 +143,16 @@ public class FrontController extends HttpServlet {
         
         String viewPath = "/WEB-INF/views/" + modelView.getUrl();
         request.getRequestDispatcher(viewPath).forward(request, response);
+    }
+
+    private void handleControllersList(HttpServletResponse response) throws IOException {
+        List<Class<?>> controllers = PackageScanner.findControllers(basePackage);
+        response.setContentType("text/plain");
+        PrintWriter writer = response.getWriter();
+        writer.println("Available Controllers:");
+        for (Class<?> controller : controllers) {
+            writer.println("- " + controller.getName());
+        }
     }
 
     private void handleError(SprintFrameworkException e, HttpServletRequest request, HttpServletResponse response) 
