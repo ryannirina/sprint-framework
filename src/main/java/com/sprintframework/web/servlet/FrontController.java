@@ -22,11 +22,12 @@ import java.util.Map;
 
 public class FrontController extends HttpServlet {
     private HandlerMapping handlerMapping;
+    private String basePackage;
     
     @Override
     public void init() throws ServletException {
         try {
-            String basePackage = getServletConfig().getInitParameter("basePackage");
+            basePackage = getServletConfig().getInitParameter("basePackage");
             if (basePackage == null || basePackage.trim().isEmpty()) {
                 throw new SprintFrameworkException(
                     ErrorType.PACKAGE_NOT_FOUND,
@@ -34,9 +35,13 @@ public class FrontController extends HttpServlet {
                 );
             }
             
-            List<Class<?>> controllers = PackageScanner.findControllers(basePackage);
             handlerMapping = new HandlerMapping();
             
+            // Register system controller first
+            handlerMapping.registerController(SystemController.class);
+            
+            // Register application controllers
+            List<Class<?>> controllers = PackageScanner.findControllers(basePackage);
             for (Class<?> controller : controllers) {
                 handlerMapping.registerController(controller);
             }
@@ -63,7 +68,14 @@ public class FrontController extends HttpServlet {
         
         try {
             HandlerMethod handler = handlerMapping.getHandler(relativeUrl);
-            Object controller = handler.getControllerClass().getDeclaredConstructor().newInstance();
+            Object controller;
+            
+            // Special handling for SystemController
+            if (handler.getControllerClass() == SystemController.class) {
+                controller = new SystemController(handlerMapping, basePackage);
+            } else {
+                controller = handler.getControllerClass().getDeclaredConstructor().newInstance();
+            }
             
             // Inject session if needed
             injectSession(controller, request);

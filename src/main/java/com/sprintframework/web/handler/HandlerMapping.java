@@ -10,9 +10,12 @@ import java.util.Map;
 
 public class HandlerMapping {
     private final Map<String, HandlerMethod> handlers = new HashMap<>();
+    private final Map<Class<?>, Map<String, Method>> controllerMappings = new HashMap<>();
 
     public void registerController(Class<?> controllerClass) {
+        Map<String, Method> mappings = new HashMap<>();
         Method[] methods = controllerClass.getDeclaredMethods();
+        
         for (Method method : methods) {
             GetMapping mapping = method.getAnnotation(GetMapping.class);
             if (mapping != null) {
@@ -30,7 +33,12 @@ public class HandlerMapping {
                     );
                 }
                 handlers.put(url, new HandlerMethod(controllerClass, method));
+                mappings.put(url, method);
             }
+        }
+        
+        if (!mappings.isEmpty()) {
+            controllerMappings.put(controllerClass, mappings);
         }
     }
 
@@ -43,5 +51,9 @@ public class HandlerMapping {
             );
         }
         return handler;
+    }
+
+    public Map<String, Method> getHandlersByController(Class<?> controllerClass) {
+        return controllerMappings.getOrDefault(controllerClass, new HashMap<>());
     }
 }
